@@ -60,17 +60,8 @@ The model classifies images into the following categories:
 
 ```bash
 wastenet_project/
-│
-├── app.py
-├── waste_nn_dashboard.html
-├── requirements.txt
-├── README.md
-│
-├── checkpoints/
-│   ├── README.txt
-│   └── vit_full_best.pth
-│
-├── notebooks/
+
+├── notebooks
 │   ├── 01_data_collection.ipynb
 │   ├── 02_preprocessing.ipynb
 │   ├── 03_baseline_cnn.ipynb
