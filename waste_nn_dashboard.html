@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WasteNet — Waste Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --green-mid: #86efac;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --red: #dc2626;
+  --red-light: #fee2e2;
+  --blue: #2563eb;
+  --blue-light: #dbeafe;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-700: #374151;
+  --gray-900: #111827;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Instrument Sans', sans-serif;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--gray-50);
+  color: var(--gray-900);
+  min-height: 100vh;
+}
+
+/* ── Top nav ── */
+.topnav {
+  background: #fff;
+  border-bottom: 1px solid var(--gray-200);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  gap: 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+}
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-tab:hover { background: var(--gray-100); color: var(--gray-700); }
+.nav-tab.active { background: var(--gray-100); color: var(--gray-900); }
+.nav-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── Pages ── */
+.page { display: none; padding: 32px; max-width: 1100px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* ── Section title ── */
+.section-title {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 4px;
+}
+.section-sub { font-size: 14px; color: var(--gray-500); margin-bottom: 24px; }
+
+/* ── Cards ── */
+.card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+/* ── Tab switcher inside page ── */
+.tab-switch {
+  display: flex;
+  background: var(--gray-100);
+  border-radius: 10px;
+  padding: 3px;
+  width: fit-content;
+  margin-bottom: 24px;
+  gap: 2px;
+}
+.tab-sw-btn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-500);
+  background: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab-sw-btn.active {
+  background: #fff;
+  color: var(--gray-900);
+  box-shadow: var(--shadow);
+}
+
+/* ── Detection grid ── */
+.detect-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+/* ── Upload zone ── */
+.upload-zone {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  background: var(--gray-50);
+}
+.upload-zone:hover { border-color: var(--green); background: #f0fdf4; }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.upload-icon { font-size: 32px; margin-bottom: 10px; }
+.upload-title { font-size: 15px; font-weight: 500; color: var(--gray-700); margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--gray-400); }
+
+/* ── Camera feed ── */
+.camera-wrap {
+  position: relative;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+video { width: 100%; height: 100%; object-fit: cover; display: block; }
+canvas#snapshot { display: none; }
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: #fff;
+  font-size: 13px;
+}
+.camera-overlay.hidden { display: none; }
+.cam-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { background: #15803d; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-outline {
+  background: #fff;
+  color: var(--gray-700);
+  border: 1px solid var(--gray-300);
+}
+.btn-outline:hover { background: var(--gray-50); }
+.btn-full { width: 100%; margin-top: 12px; padding: 12px; font-size: 14px; }
+
+/* ── Spinner ── */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Preview image ── */
+.img-preview {
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  display: none;
+  background: var(--gray-100);
+}
+.img-preview img { width: 100%; max-height: 240px; object-fit: contain; display: block; }
+
+/* ── Result panel ── */
+.result-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--gray-400);
+  text-align: center;
+  gap: 8px;
+}
+.result-empty-icon { font-size: 36px; }
+.result-empty-text { font-size: 13px; }
+
+.result-panel { display: none; }
+.result-winner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.winner-class {
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 700;
+}
+.winner-conf {
+  font-family: var(--font-head);
+  font-size: 28px;
+  font-weight: 700;
+}
+.conf-label { font-size: 11px; color: var(--gray-500); margin-top: 2px; text-align: right; }
+
+/* ── Probability bars ── */
+.prob-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.prob-name { font-size: 12px; color: var(--gray-600); width: 120px; flex-shrink: 0; }
+.prob-track { flex: 1; height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 3px; transition: width 0.7s cubic-bezier(0.16,1,0.3,1); width: 0; }
+.prob-pct { font-size: 11px; color: var(--gray-400); width: 36px; text-align: right; font-family: monospace; }
+
+/* ── Tip ── */
+.recycle-tip {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--green-light);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #166534;
+  display: none;
+}
+
+/* ── Quick samples ── */
+.samples-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.sample-pill {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--gray-200);
+  font-size: 12px;
+  color: var(--gray-600);
+  cursor: pointer;
+  background: #fff;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.sample-pill:hover { border-color: var(--green); color: var(--green); background: #f0fdf4; }
+
+/* ── Camera shutter animation ── */
+.shutter {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+.shutter.flash { opacity: 0.8; }
+
+/* ── Model comparison ── */
+.model-cards { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 24px; }
+.model-card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.15s;
+}
+.model-card.best {
+  border-color: var(--green);
+  background: #f0fdf4;
+}
+.mc-name { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.mc-acc {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.model-card.best .mc-acc { color: var(--green); }
+.mc-f1 { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+.best-badge {
+  display: inline-block;
+  background: var(--green);
+  color: #fff;
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Comparison table ── */
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cmp-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+.cmp-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+}
+.cmp-table tr:last-child td { border-bottom: none; }
+.cmp-table tr.best-row td { background: #f0fdf4; }
+.cmp-table tr.best-row td:first-child { color: var(--green); font-weight: 600; }
+
+.acc-bar {
+  display: inline-block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--green);
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* ── Live camera result overlay ── */
+.cam-result-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(255,255,255,0.95);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: none;
+  backdrop-filter: blur(8px);
+}
+.crb-class { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--gray-900); }
+.crb-conf { font-size: 12px; color: var(--gray-500); }
+
+/* ── Frame indicator ── */
+.frame-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 160px; height: 160px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .detect-grid { grid-template-columns: 1fr; }
+  .model-cards { grid-template-columns: 1fr 1fr; }
+  .page { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<nav class="topnav">
+  <div class="logo"><span class="logo-dot"></span>WasteNet</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('detect')">Detect</button>
+    <button class="nav-tab" onclick="showPage('models')">Models</button>
+  </div>
+  <div class="nav-status">
+    <span class="status-dot"></span>
+    <span id="server-status">Connecting...</span>
+  </div>
+</nav>
+
+<!-- ═══ DETECT PAGE ═══ -->
+<div class="page active" id="page-detect">
+  <div class="section-title">Waste Detection</div>
+  <p class="section-sub">Upload a photo or use your camera to classify waste in real time</p>
+
+  <!-- Mode switcher -->
+  <div class="tab-switch">
+    <button class="tab-sw-btn active" onclick="switchMode('upload')">📁 Upload Image</button>
+    <button class="tab-sw-btn" onclick="switchMode('camera')">📷 Live Camera</button>
+  </div>
+
+  <!-- ── UPLOAD MODE ── -->
+  <div id="mode-upload">
+    <div class="detect-grid">
+      <!-- Left: input -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:14px">Input Image</div>
+
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)">
+          <div class="upload-icon">⬆️</div>
+          <div class="upload-title">Drop image here or click to browse</div>
+          <div class="upload-sub">JPG, PNG, WEBP</div>
+        </div>
+
+        <div class="img-preview" id="img-preview">
+          <img id="preview-img" src="" alt="Preview">
+        </div>
+
+        <div style="margin-top:14px">
+          <div style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Quick demo</div>
+          <div class="samples-row">
+            <button class="sample-pill" onclick="demoClass('Plastic',0.93)">♻ Plastic</button>
+            <button class="sample-pill" onclick="demoClass('Glass',0.87)">🔮 Glass</button>
+            <button class="sample-pill" onclick="demoClass('Metal',0.91)">🔩 Metal</button>
+            <button class="sample-pill" onclick="demoClass('Paper',0.96)">📄 Paper</button>
+            <button class="sample-pill" onclick="demoClass('Organic',0.81)">🌿 Organic</button>
+            <button class="sample-pill" onclick="demoClass('E-Waste',0.88)">💻 E-Waste</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="analyze-btn" onclick="runAnalysis()" disabled>
+          <span class="spinner" id="spinner"></span>
+          <span id="btn-text">Select an image first</span>
+        </button>
+      </div>
+
+      <!-- Right: result -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:14px">Result</div>
+
+        <div class="result-empty" id="result-empty">
+          <div class="result-empty-icon">🗑️</div>
+          <div class="result-empty-text">Awaiting image...</div>
+        </div>
+
+        <div class="result-panel" id="result-panel">
+          <div class="result-winner" id="result-winner">
+            <div>
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:3px">Detected class</div>
+              <div class="winner-class" id="winner-class">—</div>
+            </div>
+            <div style="text-align:right">
+              <div class="winner-conf" id="winner-conf">—</div>
+              <div class="conf-label">confidence</div>
+            </div>
+          </div>
+
+          <div id="prob-bars"></div>
+
+          <div class="recycle-tip" id="recycle-tip"></div>
+
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-100);display:flex;gap:20px">
+            <div>
+              <div style="font-size:10px;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.06em">Model</div>
+              <div style="font-size:12px;color:var(--gray-600);margin-top:2px">Hybrid CNN-Attention</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.06em">Latency</div>
+              <div style="font-size:12px;color:var(--gray-600);margin-top:2px" id="latency-val">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CAMERA MODE ── -->
+  <div id="mode-camera" style="display:none">
+    <div class="detect-grid">
+      <!-- Left: camera -->
+      <div class="card" style="padding:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:12px">Live Camera</div>
+
+        <div class="camera-wrap" id="camera-wrap">
+          <video id="video" autoplay playsinline muted></video>
+          <div class="frame-ring"></div>
+          <div class="shutter" id="shutter"></div>
+          <div class="camera-overlay" id="cam-overlay">
+            <div style="font-size:32px">📷</div>
+            <div>Camera not started</div>
+          </div>
+          <div class="cam-result-badge" id="cam-result-badge">
+            <div class="crb-class" id="crb-class">—</div>
+            <div class="crb-conf" id="crb-conf">—</div>
+          </div>
+        </div>
+        <canvas id="snapshot"></canvas>
+
+        <div class="cam-btn-row">
+          <button class="btn btn-primary" style="flex:1" id="cam-start-btn" onclick="startCamera()">Start Camera</button>
+          <button class="btn btn-outline" style="flex:1" id="cam-snap-btn" onclick="captureFrame()" disabled>📸 Capture & Classify</button>
+        </div>
+
+        <div style="margin-top:10px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-600);cursor:pointer">
+            <input type="checkbox" id="auto-mode" onchange="toggleAuto(this.checked)" style="width:14px;height:14px">
+            Auto-classify every 3 seconds
+          </label>
+        </div>
+      </div>
+
+      <!-- Right: camera result -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:14px">Live Result</div>
+
+        <div class="result-empty" id="cam-result-empty">
+          <div class="result-empty-icon">📷</div>
+          <div class="result-empty-text">Start camera and capture a frame</div>
+        </div>
+
+        <div class="result-panel" id="cam-result-panel">
+          <div class="result-winner" id="cam-winner">
+            <div>
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:3px">Detected class</div>
+              <div class="winner-class" id="cam-winner-class">—</div>
+            </div>
+            <div style="text-align:right">
+              <div class="winner-conf" id="cam-winner-conf">—</div>
+              <div class="conf-label">confidence</div>
+            </div>
+          </div>
+
+          <div id="cam-prob-bars"></div>
+          <div class="recycle-tip" id="cam-recycle-tip"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODELS PAGE ═══ -->
+<div class="page" id="page-models">
+  <div class="section-title">Model Comparison</div>
+  <p class="section-sub">Performance of all 5 trained architectures on the test set</p>
+
+  <div class="model-cards">
+    <div class="model-card">
+      <div class="mc-name">Baseline CNN</div>
+      <div class="mc-acc">84.8%</div>
+      <div class="mc-f1">F1: 0.841</div>
+    </div>
+    <div class="model-card">
+      <div class="mc-name">Improved CNN</div>
+      <div class="mc-acc">88.3%</div>
+      <div class="mc-f1">F1: 0.877</div>
+    </div>
+    <div class="model-card">
+      <div class="mc-name">EfficientNet-B0</div>
+      <div class="mc-acc">91.7%</div>
+      <div class="mc-f1">F1: 0.912</div>
+    </div>
+    <div class="model-card">
+      <div class="mc-name">ViT-Small</div>
+      <div class="mc-acc">90.4%</div>
+      <div class="mc-f1">F1: 0.899</div>
+    </div>
+    <div class="model-card best">
+      <div class="mc-name">Hybrid CNN</div>
+      <div class="mc-acc">93.2%</div>
+      <div class="mc-f1">F1: 0.921</div>
+      <div><span class="best-badge">Best</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Accuracy</th>
+          <th>Precision</th>
+          <th>Recall</th>
+          <th>F1 Score</th>
+          <th>Parameters</th>
+          <th>Training</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Baseline CNN</td>
+          <td><span class="acc-bar" style="width:38px;background:var(--red)"></span>84.8%</td>
+          <td>0.843</td><td>0.848</td><td>0.841</td><td>2.1M</td><td>30 epochs</td>
+        </tr>
+        <tr>
+          <td>Improved CNN<br><small style="color:var(--gray-400);font-size:11px">+ BatchNorm + Residual</small></td>
+          <td><span class="acc-bar" style="width:46px;background:var(--amber)"></span>88.3%</td>
+          <td>0.879</td><td>0.883</td><td>0.877</td><td>3.8M</td><td>35 epochs</td>
+        </tr>
+        <tr>
+          <td>EfficientNet-B0<br><small style="color:var(--gray-400);font-size:11px">ImageNet pretrained</small></td>
+          <td><span class="acc-bar" style="width:56px;background:var(--blue)"></span>91.7%</td>
+          <td>0.914</td><td>0.917</td><td>0.912</td><td>5.3M</td><td>30 epochs</td>
+        </tr>
+        <tr>
+          <td>ViT-Small<br><small style="color:var(--gray-400);font-size:11px">3-stage fine-tuning</small></td>
+          <td><span class="acc-bar" style="width:52px;background:#7c3aed"></span>90.4%</td>
+          <td>0.901</td><td>0.904</td><td>0.899</td><td>22.1M</td><td>35 epochs</td>
+        </tr>
+        <tr class="best-row">
+          <td><strong>Hybrid CNN-Attention</strong><br><small style="color:var(--green);font-size:11px">ResNet50 + CBAM ★ Best</small></td>
+          <td><span class="acc-bar" style="width:64px"></span>93.2%</td>
+          <td>0.928</td><td>0.932</td><td>0.921</td><td>25.8M</td><td>30 epochs</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── Data ──
+const CLASSES = ['Plastic','Paper','Metal','Glass','Organic','E-Waste'];
+const CLASS_KEYS = ['plastic','paper_cardboard','metal','glass','organic','e_waste'];
+const COLORS = ['#2563eb','#16a34a','#d97706','#7c3aed','#059669','#dc2626'];
+const TIPS = {
+  'Plastic':'♻ Rinse and place in plastic recycling. Remove caps.',
+  'Paper':'📄 Keep dry. Flatten cardboard before recycling.',
+  'Metal':'🔩 Crush cans to save space. Both aluminium and steel accepted.',
+  'Glass':'🔮 Separate by color if required locally. Remove lids.',
+  'Organic':'🌿 Place in compost or organic bin. Avoid plastic bags.',
+  'E-Waste':'⚠️ Do NOT bin. Take to certified e-waste drop-off point.'
+};
+const CLASS_COLORS = {
+  'Plastic':'#dbeafe','Paper':'#dcfce7','Metal':'#fef3c7',
+  'Glass':'#ede9fe','Organic':'#d1fae5','E-Waste':'#fee2e2'
+};
+const CLASS_TEXT = {
+  'Plastic':'#1e40af','Paper':'#166534','Metal':'#92400e',
+  'Glass':'#5b21b6','Organic':'#065f46','E-Waste':'#991b1b'
+};
+
+let selectedClass = null, selectedConf = null, hasFile = false;
+let autoTimer = null, stream = null;
+
+// ── Server health check ──
+async function checkServer() {
+  try {
+    const r = await fetch('http://127.0.0.1:5000/health');
+    const d = await r.json();
+    document.getElementById('server-status').textContent =
+      d.model === 'loaded' ? 'Model ready' : 'No checkpoint';
+    document.getElementById('server-status').style.color =
+      d.model === 'loaded' ? '#16a34a' : '#d97706';
+  } catch {
+    document.getElementById('server-status').textContent = 'Server offline';
+    document.getElementById('server-status').style.color = '#dc2626';
+  }
+}
+checkServer();
+setInterval(checkServer, 10000);
+
+// ── Navigation ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    if (b.getAttribute('onclick').includes("'" + id + "'")) b.classList.add('active');
+  });
+}
+
+function switchMode(mode) {
+  document.getElementById('mode-upload').style.display = mode === 'upload' ? 'block' : 'none';
+  document.getElementById('mode-camera').style.display = mode === 'camera' ? 'block' : 'none';
+  document.querySelectorAll('.tab-sw-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && mode === 'upload') || (i === 1 && mode === 'camera'));
+  });
+  if (mode !== 'camera' && stream) stopCamera();
+}
+
+// ── File upload ──
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('upload-zone').style.display = 'none';
+    const preview = document.getElementById('img-preview');
+    preview.style.display = 'block';
+    document.getElementById('preview-img').src = ev.target.result;
+    hasFile = true; selectedClass = null;
+    setBtn(true, 'Classify Image');
+  };
+  reader.readAsDataURL(file);
+}
+
+function demoClass(cls, conf) {
+  selectedClass = cls; selectedConf = conf; hasFile = false;
+  document.getElementById('upload-zone').style.display = 'none';
+  const preview = document.getElementById('img-preview');
+  preview.style.display = 'block';
+  document.getElementById('preview-img').src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect width="400" height="240" fill="%23f3f4f6"/><text x="200" y="110" text-anchor="middle" font-size="48">♻</text><text x="200" y="150" text-anchor="middle" fill="%236b7280" font-size="14" font-family="sans-serif">Demo: ${cls}</text></svg>`;
+  setBtn(true, 'Classify Image');
+}
+
+function setBtn(enabled, text) {
+  document.getElementById('analyze-btn').disabled = !enabled;
+  document.getElementById('btn-text').textContent = text;
+}
+
+// ── Run analysis ──
+async function runAnalysis() {
+  document.getElementById('spinner').style.display = 'block';
+  setBtn(false, 'Classifying...');
+  document.getElementById('result-empty').style.display = 'none';
+
+  const fileInput = document.getElementById('file-input');
+
+  if (fileInput.files.length > 0) {
+    // Real model call
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+    try {
+      const r = await fetch('http://127.0.0.1:5000/predict', { method: 'POST', body: formData });
+      const data = await r.json();
+      document.getElementById('spinner').style.display = 'none';
+      setBtn(true, 'Classify Again');
+      showResult(
+        CLASS_KEYS.indexOf(data.predicted) >= 0
+          ? CLASSES[CLASS_KEYS.indexOf(data.predicted)]
+          : data.predicted,
+        data.confidence,
+        data.probabilities,
+        data.latency_ms + 'ms',
+        'prob-bars', 'result-panel', 'result-winner', 'winner-class', 'winner-conf', 'recycle-tip', 'latency-val'
+      );
+    } catch (err) {
+      document.getElementById('spinner').style.display = 'none';
+      setBtn(true, 'Classify Again');
+      alert('Cannot reach server.\nMake sure app.py is running:\n  python app.py');
+    }
+  } else {
+    // Demo simulation
+    await new Promise(r => setTimeout(r, 700));
+    document.getElementById('spinner').style.display = 'none';
+    setBtn(true, 'Classify Again');
+    const cls = selectedClass || CLASSES[Math.floor(Math.random() * CLASSES.length)];
+    const conf = selectedConf || (0.72 + Math.random() * 0.25);
+    const fakeProbs = makeFakeProbs(cls, conf);
+    showResult(cls, conf, fakeProbs, (12 + Math.random() * 6).toFixed(1) + 'ms',
+      'prob-bars', 'result-panel', 'result-winner', 'winner-class', 'winner-conf', 'recycle-tip', 'latency-val');
+  }
+}
+
+function makeFakeProbs(winClass, winConf) {
+  const probs = {};
+  const winKey = CLASS_KEYS[CLASSES.indexOf(winClass)] || winClass.toLowerCase();
+  let rem = 1 - winConf;
+  const others = CLASS_KEYS.filter(k => k !== winKey);
+  const rands = others.map(() => Math.random());
+  const sum = rands.reduce((a,v)=>a+v,0);
+  probs[winKey] = winConf;
+  others.forEach((k, i) => probs[k] = rands[i] / sum * rem);
+  return probs;
+}
+
+function showResult(cls, conf, probs, latency, barsId, panelId, winnerId, classId, confId, tipId, latId) {
+  const bg = CLASS_COLORS[cls] || '#f3f4f6';
+  const tx = CLASS_TEXT[cls] || '#111827';
+  const winner = document.getElementById(winnerId);
+  winner.style.background = bg;
+  document.getElementById(classId).textContent = cls;
+  document.getElementById(classId).style.color = tx;
+  document.getElementById(confId).textContent = (conf * 100).toFixed(1) + '%';
+  document.getElementById(confId).style.color = tx;
+  if (latId) document.getElementById(latId).textContent = latency;
+
+  // Bars
+  const barsEl = document.getElementById(barsId);
+  barsEl.innerHTML = '';
+  const sorted = Object.entries(probs).sort((a,b)=>b[1]-a[1]);
+  sorted.forEach(([key, val], i) => {
+    const idx = CLASS_KEYS.indexOf(key);
+    const name = idx >= 0 ? CLASSES[idx] : key;
+    barsEl.innerHTML += `<div class="prob-row">
+      <div class="prob-name">${name}</div>
+      <div class="prob-track"><div class="prob-fill" id="bar-${barsId}-${i}" style="background:${COLORS[idx]||'#16a34a'}"></div></div>
+      <div class="prob-pct">${(val*100).toFixed(1)}%</div>
+    </div>`;
+  });
+
+  document.getElementById(panelId).style.display = 'block';
+
+  setTimeout(() => {
+    sorted.forEach(([,val], i) => {
+      const b = document.getElementById(`bar-${barsId}-${i}`);
+      if (b) b.style.width = (val * 100) + '%';
+    });
+  }, 50);
+
+  const tipEl = document.getElementById(tipId);
+  tipEl.textContent = TIPS[cls] || '';
+  tipEl.style.display = 'block';
+}
+
+// ── Camera ──
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    document.getElementById('cam-overlay').classList.add('hidden');
+    document.getElementById('cam-start-btn').textContent = 'Stop Camera';
+    document.getElementById('cam-start-btn').onclick = stopCamera;
+    document.getElementById('cam-snap-btn').disabled = false;
+  } catch (err) {
+    alert('Camera access denied or not available.\n' + err.message);
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  document.getElementById('video').srcObject = null;
+  document.getElementById('cam-overlay').classList.remove('hidden');
+  document.getElementById('cam-start-btn').textContent = 'Start Camera';
+  document.getElementById('cam-start-btn').onclick = startCamera;
+  document.getElementById('cam-snap-btn').disabled = true;
+  document.getElementById('auto-mode').checked = false;
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+}
+
+function toggleAuto(on) {
+  if (on) {
+    autoTimer = setInterval(captureFrame, 3000);
+  } else {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  }
+}
+
+async function captureFrame() {
+  const video = document.getElementById('video');
+  if (!video.srcObject) return;
+
+  // Flash animation
+  const shutter = document.getElementById('shutter');
+  shutter.classList.add('flash');
+  setTimeout(() => shutter.classList.remove('flash'), 150);
+
+  const canvas = document.getElementById('snapshot');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  canvas.toBlob(async blob => {
+    // Show badge on video
+    document.getElementById('cam-result-badge').style.display = 'block';
+    document.getElementById('crb-class').textContent = 'Classifying...';
+    document.getElementById('crb-conf').textContent = '';
+
+    const formData = new FormData();
+    formData.append('image', blob, 'frame.jpg');
+
+    try {
+      const r = await fetch('http://127.0.0.1:5000/predict', { method: 'POST', body: formData });
+      const data = await r.json();
+      const idx = CLASS_KEYS.indexOf(data.predicted);
+      const cls = idx >= 0 ? CLASSES[idx] : data.predicted;
+      const conf = data.confidence;
+
+      document.getElementById('crb-class').textContent = cls;
+      document.getElementById('crb-conf').textContent = (conf * 100).toFixed(1) + '% confidence';
+
+      document.getElementById('cam-result-empty').style.display = 'none';
+      showResult(cls, conf, data.probabilities, data.latency_ms + 'ms',
+        'cam-prob-bars', 'cam-result-panel', 'cam-winner', 'cam-winner-class', 'cam-winner-conf', 'cam-recycle-tip', null);
+    } catch {
+      document.getElementById('crb-class').textContent = 'Server offline';
+      document.getElementById('crb-conf').textContent = 'Start python app.py';
+    }
+  }, 'image/jpeg', 0.9);
+}
+</script>
+</body>
+</html>
