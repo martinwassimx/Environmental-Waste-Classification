@@ -4,10 +4,10 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
 ![PyTorch](https://img.shields.io/badge/PyTorch-Deep%20Learning-red?style=for-the-badge&logo=pytorch)
 ![Flask](https://img.shields.io/badge/Flask-Backend-black?style=for-the-badge&logo=flask)
-![Accuracy](https://img.shields.io/badge/Accuracy-93.2%25-brightgreen?style=for-the-badge)
+![Accuracy](https://img.shields.io/badge/Accuracy-95.15%25-brightgreen?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-> Deep Learning waste classification system capable of detecting and classifying waste images into **6 categories** in real time using multiple neural network architectures, transfer learning, and attention mechanisms.
+> Deep Learning waste classification system capable of detecting and classifying waste images into **6 categories** in real time using multiple neural network architectures, transfer learning, and transformer-based vision models.
 
 ---
 
@@ -15,19 +15,20 @@
 
 WasteNet is a university Deep Learning & Computer Vision project focused on solving a real-world environmental problem through AI.
 
-The system classifies waste images into different recyclable categories to support:
+The system classifies waste images into recyclable categories to support:
 
 - Smart waste management
 - Recycling assistance
 - Environmental sustainability
-- AI-based sorting systems
+- AI-based waste sorting systems
 
-The project progressively explores **5 deep learning architectures** — starting from a custom CNN and ending with a hybrid attention-based model.
+The project progressively explores **5 deep learning architectures** — from a custom CNN baseline to advanced transformer-based models.
 
 ### 🏆 Best Model
+
 | Model | Accuracy | F1 Score |
 |---|---|---|
-| Hybrid CNN-Attention (ResNet50 + CBAM) | **93.2%** | **0.921** |
+| ViT-Small | **95.15%** | **0.9516** |
 
 ---
 
@@ -48,11 +49,11 @@ The model classifies images into the following categories:
 
 | Model | Accuracy | Strategy |
 |---|---|---|
-| Baseline CNN | 84.8% | Built from scratch |
-| Improved CNN | 88.3% | BatchNorm + Residual Blocks |
-| EfficientNet-B0 | 91.7% | Transfer Learning |
-| ViT-Small | 90.4% | Vision Transformer |
-| Hybrid CNN-Attention | **93.2%** | ResNet50 + CBAM |
+| Baseline CNN | 50.24% | Built from scratch |
+| Improved CNN | 61.65% | BatchNorm + Residual Blocks |
+| EfficientNet-B0 | 94.42% | Transfer Learning |
+| ViT-Small ⭐ BEST | **95.15%** | Vision Transformer |
+| Hybrid CNN-Attention | 40.53% | ResNet50 + CBAM |
 
 ---
 
@@ -149,9 +150,9 @@ http://127.0.0.1:8080/waste_nn_dashboard.html
 
 | Metric | Best Score |
 |---|---|
-| Accuracy | 93.2% |
-| F1 Score | 0.921 |
-| Best Model | ResNet50 + CBAM |
+| Accuracy | 95.15% |
+| F1 Score | 0.9516 |
+| Best Model | ViT-Small |
 
 ---
 
