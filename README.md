@@ -163,14 +163,3 @@ http://127.0.0.1:8080/waste_nn_dashboard.html
 - Environmental monitoring
 - AI recycling assistants
 
----
-
-# 👨‍💻 Authors
-
-Developed as a Neural Networks & Deep Learning university project.
-
----
-
-# 📜 License
-
-MIT License
